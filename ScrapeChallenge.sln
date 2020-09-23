@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30503.244
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScrapeChallenge", "ScrapeChallenge\ScrapeChallenge.csproj", "{ACFF6E15-B0CA-4D19-86BE-BF8AAC7E2496}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{ACFF6E15-B0CA-4D19-86BE-BF8AAC7E2496}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACFF6E15-B0CA-4D19-86BE-BF8AAC7E2496}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACFF6E15-B0CA-4D19-86BE-BF8AAC7E2496}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACFF6E15-B0CA-4D19-86BE-BF8AAC7E2496}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {85A76A7C-4C95-4ADC-9FB3-F4782EC02D97}
+	EndGlobalSection
+EndGlobal
