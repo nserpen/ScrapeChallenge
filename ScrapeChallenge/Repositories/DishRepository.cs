@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson.Serialization.Conventions;
@@ -21,18 +19,14 @@ namespace ScrapeChallenge.Repositories
             _dishCollection = mongoClient.GetDatabase("scrapeChallenge").GetCollection<Dish>("dishes");
         }
 
-        public async Task<bool> AddDishAsync(Dish dish, CancellationToken cancellationToken = default)
+        public async Task InsertDishAsync(Dish dish, CancellationToken cancellationToken = default)
         {
-            try
-            {
-                await _dishCollection.WithWriteConcern(WriteConcern.WMajority).InsertOneAsync(dish, new InsertOneOptions { BypassDocumentValidation = false }, cancellationToken);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                // Log error
-                return false;
-            }
+            await _dishCollection.WithWriteConcern(WriteConcern.WMajority).InsertOneAsync(dish, new InsertOneOptions { BypassDocumentValidation = false }, cancellationToken);
+        }
+
+        public async Task BulkInsertDishesAsync(IEnumerable<Dish> dishes, CancellationToken cancellationToken = default)
+        {
+            await _dishCollection.InsertManyAsync(dishes, new InsertManyOptions { IsOrdered = true, BypassDocumentValidation = false }, cancellationToken);
         }
 
     }

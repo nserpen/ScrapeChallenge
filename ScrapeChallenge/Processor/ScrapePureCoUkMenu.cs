@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using PuppeteerSharp;
 using ScrapeChallenge.Models;
 
@@ -9,6 +11,13 @@ namespace ScrapeChallenge.Processor
 {
     public class ScrapePureCoUkMenu : IPureCoUkScraper
     {
+        private readonly ILogger<ScrapePureCoUkMenu> _logger;
+
+        public ScrapePureCoUkMenu(ILogger<ScrapePureCoUkMenu> logger)
+        {
+            _logger = logger;
+        }
+
         [DebuggerDisplay("MenuTitle: {Title} Url: {Url}")]
         public class MenuAnchor
         {
@@ -110,6 +119,8 @@ namespace ScrapeChallenge.Processor
 
                 }
 
+                Debug.WriteLine("STARTING DISH PAGES!");
+
                 using (Page page = await browser.NewPageAsync())
                 {
                     var jsSelectDishName = @"document.querySelector('header h2').innerText;";
@@ -135,8 +146,9 @@ namespace ScrapeChallenge.Processor
                                     dishName = await page.EvaluateExpressionAsync<string>(jsSelectDishName);
                                     dishDescription = await page.EvaluateExpressionAsync<string>(jsSelectDishDescription);
                                 }
-                                catch
+                                catch (Exception ex)
                                 {
+                                    _logger.LogError(ex, ex.Message, null);
                                     hasError = true;
                                 }
 
@@ -159,6 +171,7 @@ namespace ScrapeChallenge.Processor
                 }
             }
 
+            _logger.LogInformation($"Completed {dishList.Count} dishes.");
             return dishList;
 
         }

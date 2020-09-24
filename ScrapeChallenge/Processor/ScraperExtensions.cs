@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ScrapeChallenge.Processor
 {
@@ -12,7 +9,8 @@ namespace ScrapeChallenge.Processor
         {
             servicesBuilder.AddSingleton<IPureCoUkScraper, ScrapePureCoUkMenu>(s =>
             {
-                return new ScrapePureCoUkMenu();
+                var logger = s.GetRequiredService<ILogger<ScrapePureCoUkMenu>>();
+                return new ScrapePureCoUkMenu(logger);
             });
         }
     }

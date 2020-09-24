@@ -20,7 +20,7 @@
     "ScrapeChallenge": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "api/values",
+      "launchUrl": "scrape",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

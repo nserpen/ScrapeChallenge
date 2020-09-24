@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ScrapeChallenge.Models;
-using PuppeteerSharp;
 using ScrapeChallenge.Processor;
 using ScrapeChallenge.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace ScrapeChallenge.Controllers
 {
@@ -15,15 +12,18 @@ namespace ScrapeChallenge.Controllers
     [ApiController]
     public class ScrapeController : ControllerBase
     {
-        IPureCoUkScraper _scraper;
-        DishRepository _repository;
+        private readonly IPureCoUkScraper _scraper;
+        private readonly DishRepository _repository;
+        private readonly ILogger<ScrapeController> _logger;
 
-        public ScrapeController(IPureCoUkScraper scraper, DishRepository repository)
+        public ScrapeController(IPureCoUkScraper scraper, DishRepository repository, ILogger<ScrapeController> logger)
         {
             _scraper = scraper;
             _repository = repository;
+            _logger = logger;
         }
 
+        // POST /scrape
         [HttpPost]
         public async Task<ActionResult> Post([FromBody] ScrapeUrl urlData)
         {
@@ -31,30 +31,14 @@ namespace ScrapeChallenge.Controllers
             {
                 // validate & log request
                 var dishes = await _scraper.ScrapeMenuAt(urlData.MenuUrl);
-                foreach (var dish in dishes)
-                {
-                    await _repository.AddDishAsync(dish);
-                }
-
-                return Ok();        
+                await _repository.BulkInsertDishesAsync(dishes);
+                return Ok();
             }
-            catch
+            catch (Exception ex)
             {
-                return BadRequest();
+                _logger.LogError(ex, ex.Message, null);
+                throw;
             }
-        }
-
-        [HttpGet]
-        public async Task<ActionResult> Test()
-        {
-            // validate & log request
-            var dishes = await _scraper.ScrapeMenuAt("http://www.pure.co.uk/menus/breakfast");
-            foreach (var dish in dishes)
-            {
-                // await _repository.AddDishAsync(dish);
-            }
-
-            return Ok();
         }
     }
 }
