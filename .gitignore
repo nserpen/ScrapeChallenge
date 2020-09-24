@@ -232,3 +232,4 @@ _Pvt_Extensions
 
 # FAKE - F# Make
 .fake/
+/ScrapeChallenge/.local-chromium/Win64-706915/chrome-win

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ScrapeChallenge.Processor;
 using ScrapeChallenge.Repositories;
 
 namespace ScrapeChallenge
@@ -29,6 +30,7 @@ namespace ScrapeChallenge
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             services.RegisterMongoDbRepositories();
+            services.RegisterPuppeteerScraper();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
