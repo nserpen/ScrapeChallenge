@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,20 +9,29 @@ namespace ScrapeChallenge.Processor
 {
     public class ScrapePureCoUkMenu : IPureCoUkScraper
     {
-        [DebuggerDisplay("Content: {Title} Url: {Url}")]
+        [DebuggerDisplay("MenuTitle: {Title} Url: {Url}")]
         public class MenuAnchor
         {
             public string Title { get; set; }
             public string Url { get; set; }
-            public override string ToString() => $"Title: {Title} \nURL: {Url}";
         }
 
-        [DebuggerDisplay("Content: {Title} Id: {Id}")]
+        public class MenuHier
+        {
+            public string Url { get; set; }
+            public string MenuTitle { get; set; }
+            public string MenuDescription { get; set; }
+
+            public List<MenuSection> MenuSections { get; set; }
+        }
+
+        [DebuggerDisplay("Title: {Title} Id: {Id}")]
         public class MenuSection
         {
             public string Title { get; set; }
             public string Id { get; set; }
-            public override string ToString() => $"Title: {Title} \nId: {Id}";
+
+            public List<string> DishUrls { get; set; }
         }
 
         public async Task<List<Dish>> ScrapeMenuAt(string url)
@@ -38,6 +46,7 @@ namespace ScrapeChallenge.Processor
             //using (var browser = await Puppeteer.ConnectAsync(connectOptions))
 
             var dishList = new List<Dish>();
+            var menuHierList = new List<MenuHier>();
 
             var options = new LaunchOptions { Headless = true };
             await new BrowserFetcher().DownloadAsync(BrowserFetcher.DefaultRevision);
@@ -48,54 +57,111 @@ namespace ScrapeChallenge.Processor
                 {
                     await page.GoToAsync(url);
 
-                    var jsSelectAllMenuAnchors = @"Array.from(document.querySelectorAll('.submenu a')).map( t=> {return { title: t.innerText, url: t.href}});";
+                    var jsSelectAllMenuAnchors = @"Array.from(document.querySelectorAll('.submenu a')).map(t=> { return { 'Title':t.innerText, 'Url':t.href };  });";
                     var jsSelectMenuDescription = @"document.querySelector('header.menu-header p').innerText;";
                     var jsSelectMenuSectionTitles = @"Array.from(document.querySelectorAll('h4.menu-title a'))
 .map(item => {
     id = item.getAttribute('aria-controls');
     title = item.querySelector('span').innerText;
-    return { id: id, title: title };
+    return { 'Id': id, 'Title': title };
 });";
-                    var jsSelectDishName = @"document.querySelector('header h2').innerText;";
-                    var jsSelectDishDescription = @"document.querySelector('article div:first-of-type p').innerText;";
+
 
                     var results = await page.EvaluateExpressionAsync<MenuAnchor[]>(jsSelectAllMenuAnchors);
-                    var menuUrls = results.Where(m => !m.Url.Contains("wellbeing -boxes")).ToList();
+                    var menuUrls = results.Where(m => !m.Url.Contains("wellbeing-boxes")).ToList();
 
-                    foreach (var menuUrl in menuUrls)
+                    foreach (var menuAnchor in menuUrls)
                     {
-                        var menuTitle = menuUrl.Title;
-                        await page.GoToAsync(menuUrl.Url);
+                        await page.GoToAsync(menuAnchor.Url);
                         var menuDescription = await page.EvaluateExpressionAsync<string>(jsSelectMenuDescription); // .Replace("\n", " ");
 
-                        var menuSectionTitles = await page.EvaluateExpressionAsync<MenuSection[]>(jsSelectMenuSectionTitles);
-                        foreach (var item in menuSectionTitles)
+                        var menuHier = new MenuHier
                         {
-                            var menuSectionTitle = item.Title;
-                            var menuSectionAnchors = await page.EvaluateExpressionAsync<string[]>($"Array.from(document.querySelectorAll('#{item.Id} a')).map(t=>t.href);");
+                            Url = menuAnchor.Url,
+                            MenuTitle = menuAnchor.Title,
+                            MenuDescription = menuDescription,
+                            MenuSections = new List<MenuSection>()
+                        };
 
-                            foreach (var dishUrl in menuSectionAnchors)
+                        menuHierList.Add(menuHier);
+
+                        var menuSections = await page.EvaluateExpressionAsync<MenuSection[]>(jsSelectMenuSectionTitles);
+
+                        foreach (var item in menuSections)
+                        {
+                            var menuSection = new MenuSection
                             {
-                                await page.GoToAsync(dishUrl);
-                                var dishName = await page.EvaluateExpressionAsync<string>(jsSelectDishName);
-                                var dishDescription = await page.EvaluateExpressionAsync<string>(jsSelectDishDescription);
-                                dishList.Add(new Dish
-                                {
-                                    MenuTitle = menuTitle,
-                                    MenuDescription = menuDescription,
-                                    MenuSectionTitle = menuSectionTitle,
-                                    DishName = dishName,
-                                    DishDescription = dishDescription
-                                });
+                                Title = item.Title,
+                                Id = item.Id,
+                                DishUrls = new List<string>()
+                            };
+
+                            menuHier.MenuSections.Add(menuSection);
+
+                            var menuSectionDishUrls = await page.EvaluateExpressionAsync<string[]>($"Array.from(document.querySelectorAll('#{item.Id} a')).map(t=>t.href);");
+                            foreach (var dishUrl in menuSectionDishUrls)
+                            {
+                                menuSection.DishUrls.Add(dishUrl);
                             }
                         }
-
                     }
+
+                    await page.CloseAsync();
+
+                }
+
+                using (Page page = await browser.NewPageAsync())
+                {
+                    var jsSelectDishName = @"document.querySelector('header h2').innerText;";
+                    var jsSelectDishDescription = @"document.querySelector('article > div > p').innerText;";
+
+                    // Visit each dish page
+
+                    foreach (var menuHier in menuHierList)
+                    {
+                        var menuSections = menuHier.MenuSections;
+                        foreach (var menuSection in menuSections)
+                        {
+                            var dishUrls = menuSection.DishUrls;
+                            foreach (var dishUrl in dishUrls)
+                            {
+                                await page.GoToAsync(dishUrl);
+                                string dishName = null;
+                                string dishDescription = null;
+                                bool hasError = false;
+
+                                try
+                                {
+                                    dishName = await page.EvaluateExpressionAsync<string>(jsSelectDishName);
+                                    dishDescription = await page.EvaluateExpressionAsync<string>(jsSelectDishDescription);
+                                }
+                                catch
+                                {
+                                    hasError = true;
+                                }
+
+                                var dish = new Dish
+                                {
+                                    MenuTitle = menuHier.MenuTitle,
+                                    MenuDescription = menuHier.MenuDescription,
+                                    MenuSectionTitle = menuSection.Title,
+                                    DishName = dishName,
+                                    DishDescription = dishDescription,
+                                    HasError = hasError
+                                };
+
+                                dishList.Add(dish);
+                            }
+                        }
+                    }
+
+                    await page.CloseAsync();
                 }
             }
 
             return dishList;
 
         }
+
     }
 }

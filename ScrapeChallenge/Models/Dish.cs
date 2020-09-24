@@ -18,5 +18,6 @@ namespace ScrapeChallenge.Models
         public string MenuSectionTitle { get; set; }
         public string DishName { get; set; }
         public string DishDescription { get; set; }
+        public bool HasError { get; set; }
     }
 }
